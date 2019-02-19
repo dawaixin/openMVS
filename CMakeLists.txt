@@ -19,7 +19,7 @@ set(OpenMVS_VERSION ${OpenMVS_MAJOR_VERSION}.${OpenMVS_MINOR_VERSION}.${OpenMVS_
 
 # Find dependencies:
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/build/Modules)
-
+SET(ENV{VCG_ROOT} /home/raphael/Desktop/PROJECT/OPENMVS/vcglib/)
 # fix CMake IntDir variable
 if(MSVC AND "${MSVC_VERSION}" STRGREATER "1500")
 	SET(CMAKE_CFG_INTDIR "$(Platform)/$(Configuration)")

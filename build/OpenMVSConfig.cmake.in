@@ -15,4 +15,4 @@ endif()
  
 # These are IMPORTED targets created by OpenMVSTargets.cmake
 set(OpenMVS_LIBRARIES MVS)
-set(OpenMVS_BINARIES InterfaceVisualSFM DensifyPointCloud ReconstructMesh RefineMesh TextureMesh)
+set(OpenMVS_BINARIES InterfaceVisualSFM DensifyPointCloud ReconstructMesh RefineMesh TextureMesh ColourRampMesh)
