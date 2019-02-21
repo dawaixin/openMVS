@@ -153,7 +153,7 @@ bool Initialize(size_t argc, LPCTSTR* argv)
 	Util::ensureValidPath(OPT::strOutputFileName);
 	Util::ensureUnifySlash(OPT::strOutputFileName);
 	if (OPT::strOutputFileName.IsEmpty())
-		OPT::strOutputFileName = Util::getFileFullName(OPT::strInputFileName) + _T("_colour_ramp_mesh.mvs");
+		OPT::strOutputFileName = Util::getFileFullName(OPT::strInputFileName) + _T("_colour_ramp.mvs");
 
 	// initialize global options
 	Process::setCurrentProcessPriority((Process::Priority)OPT::nProcessPriority);
@@ -197,19 +197,40 @@ int main(int argc, LPCTSTR* argv)
 	// load and estimate a dense point-cloud
 	if (!scene.Load(MAKE_PATH_SAFE(OPT::strInputFileName)))
 		return EXIT_FAILURE;
-	VERBOSE("Verifying PointCloud...");
+	
+	// verify that the provided mvs file has either a pointcloud or a mesh
+	VERBOSE("Verifying PointCloud and Mesh...");
+	bool emptyMesh = false;
+	bool emptyPointCloud = false;
 	if (scene.pointcloud.IsEmpty()) {
-		VERBOSE("error: empty initial point-cloud");
+		emptyPointCloud = true;
+	}
+	if (scene.mesh.IsEmpty()) {
+		emptyMesh = true;
+	}
+	// exit with a failure if that is not the case
+	if (emptyPointCloud && emptyMesh) {
+		VERBOSE("error: empty initial point-cloud and mesh");
 		return EXIT_FAILURE;
 	}
-	VERBOSE("Turn the Point Cloud into a Colour Ramp...");
-	if ((ARCHIVE_TYPE)OPT::nArchiveType != ARCHIVE_MVS) {
-		TD_TIMER_START();
-		if (!scene.ColourRampPointCloud())
-			return EXIT_FAILURE;
-		VERBOSE("Colouring point-cloud completed: %u points (%s)", scene.pointcloud.GetSize(), TD_TIMER_GET_FMT().c_str());
+
+	// Launch the relevant command depending on whether or not the file contains a pointcloud or a mesh
+	if (!emptyPointCloud) {
+		VERBOSE("Turn the Point Cloud into a Colour Ramp...");
+		if ((ARCHIVE_TYPE)OPT::nArchiveType != ARCHIVE_MVS) {
+			TD_TIMER_START();
+			if (!scene.ColourRampPointCloud())
+				return EXIT_FAILURE;
+		}
+	} else if (!emptyMesh) {
+		VERBOSE("Turn the Mesh into a Colour Ramp...");
+		if ((ARCHIVE_TYPE)OPT::nArchiveType != ARCHIVE_MVS) {
+			TD_TIMER_START();
+			if (!scene.ColourRampMesh())
+				return EXIT_FAILURE;
+		}
 	}
-	
+
 	// save the final mesh
 	const String baseFileName(MAKE_PATH_SAFE(Util::getFileFullName(OPT::strOutputFileName)));
 	scene.Save(baseFileName+_T(".mvs"), (ARCHIVE_TYPE)OPT::nArchiveType);

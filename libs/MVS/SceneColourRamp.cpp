@@ -68,30 +68,40 @@ bool Scene::ColourRampPointCloud()
 		}
     }
     VERBOSE("Found min and max point z-coordinates.");
-
+	VERBOSE("Min = %f Max = %f", minZ, maxZ);
 
 	//Calculate the difference between the highest and lowest point
 	float maxDiffZ = maxZ - minZ;
 	float currentDiffZ = 0.0f;
-	unsigned char scaleValue = 0;
+	int scaleValue = 0;
 	unsigned char currentR = 0;
 	unsigned char currentG = 0;
-
-	unsigned long pointCloudSize = pointcloud.points.GetSize();
+	unsigned char currentB = 0;
 	
+	unsigned long pointCloudSize = pointcloud.points.GetSize();
 	//For each point, get the z-value and modify the corresponding colour accordingly
 	FOREACH(i, pointcloud.points)
 	{
 		currentZ = pointcloud.points[i].z;
 		//determine where the current difference in Z value
 		currentDiffZ = maxZ - currentZ;
-		//determine RGB value of point
-		scaleValue = (unsigned char) (currentDiffZ * 255)/maxDiffZ; 
-		currentR = scaleValue;
-		currentG = 255 - scaleValue;
+		//determine RGB value of point on the scale
+		scaleValue = (currentDiffZ * 511)/maxDiffZ;
+		if (scaleValue <= 255) {
+			currentR = 0;
+			currentG = scaleValue - 2;
+			currentB = 255 - scaleValue;
+		} else
+		{
+			currentR = scaleValue - 255;
+			currentG = 255 - scaleValue;
+			currentB = 0;
+		}
+		
 		//Assign the RGB value to the point
 		pointcloud.colors[i].r = currentR;
 		pointcloud.colors[i].g = currentG;
+		pointcloud.colors[i].b = currentB;
 	}
 
 	DEBUG_EXTRA("Point-cloud colour ramped: %u points (%s)", pointCloudSize, TD_TIMER_GET_FMT().c_str());
@@ -100,5 +110,86 @@ bool Scene::ColourRampPointCloud()
 
 bool Scene::ColourRampMesh()
 {
+
+	if (mesh.vertices.IsEmpty()) 
+	{
+		VERBOSE("ERROR: EMPTY MESH!");
+		return false;
+	}
+
+	TD_TIMER_STARTD();
+
+	//initialise the min and max values to infinites and the current z-value to 0
+	float minZ = std::numeric_limits<float>::max();
+	float maxZ = std::numeric_limits<float>::min();
+	float currentZ = 0.0f;
+
+	FOREACH(i, mesh.vertices)
+	{
+		currentZ = mesh.vertices[i].z;
+		if (currentZ < minZ) {
+			minZ = currentZ;
+		}
+		if (currentZ > maxZ) {
+			maxZ = currentZ;
+		}
+	}
+	VERBOSE("Found min and max point z-coordinates.");
+	VERBOSE("Min = %f Max = %f", minZ, maxZ);
+
+
+	//Calculate the difference between the highest and lowest point
+	float maxDiffZ = maxZ - minZ;
+	float currentDiffZ = 0.0f;
+	int scaleValueX = 0;
+	int scaleValueY = 0;
+	int scaleValueZ = 0;
+	int scaleValueFace = 0;
+
+	float vertexXZ = 0;
+	float vertexYZ = 0;
+	float vertexZZ = 0;
+
+	unsigned char currentFaceR = 0;
+	unsigned char currentFaceG = 0;
+	unsigned char currentFaceB = 0;
+
+	unsigned long facesSize = mesh.faces.GetSize();
+
+	FOREACH(i, mesh.faces)
+	{
+		//get the z-coordinates of the vertices constituting the face
+		vertexXZ = mesh.vertices[mesh.faces[i].x].z;
+		vertexYZ = mesh.vertices[mesh.faces[i].y].z;
+		vertexZZ = mesh.vertices[mesh.faces[i].z].z;
+
+		//determine the colour to assign to each vertex and average them for the face
+		currentDiffZ = maxZ - vertexXZ;
+		scaleValueX = (currentDiffZ * 511)/maxDiffZ;
+		currentDiffZ = maxZ - vertexYZ;
+		scaleValueY = (currentDiffZ * 511)/maxDiffZ;
+		currentDiffZ = maxZ - vertexZZ;
+		scaleValueZ = (currentDiffZ * 511)/maxDiffZ;
+
+		scaleValueFace = (scaleValueX + scaleValueY + scaleValueZ) / 3;
+	
+		if (scaleValueFace <= 255) {
+			currentFaceR = 0;
+			currentFaceG = scaleValueFace - 255;
+			currentFaceB = 255 - scaleValueFace;
+		} else
+		{
+			currentFaceR = scaleValueFace - 255;
+			currentFaceG = 255 - scaleValueFace;
+			currentFaceB = 0;
+		}
+
+		//Assign the colour value to the face texture
+		
+
+	}
+
+	DEBUG_EXTRA("Mesh colour ramped: %u faces (%s)", facesSize, TD_TIMER_GET_FMT().c_str());
+
     return true;
 }
